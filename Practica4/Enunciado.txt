@@ -1,0 +1,28 @@
+1. Realizar un programa para que la UART transmita el abecedario con la siguiente configuración: 9600, 8 bits de datos, 1 bit de stop, y sin paridad y que se pueda visualizar a través del USB en el hyperteminal. PISTA: se puede utilizar un temporizador en cuya interrupción se mande una nueva letra a la UART solo si esta ha disparado previamente una interrupción de transmisión:
+
+2. Realizar un programa para que desde el hyperterminal se envíen letras mayúsculas del abecedario a la UART con la siguiente configuración: 9600 baudios, 8 bits de datos, 1bit de stop, y sin paridad. Las letras enviadas se introducen mediante el teclado del PC y una vez recibidas se visualizan en el LCD de la placa. Se visualizarán al mismo tiempo las últimas 6 letras recibidas. Utilizar las funciones del LCD de la práctica anterior.
+
+3. Unificar las dos funcionalidades anteriores en un único programa. 
+
+Puedes usar el siguiente esquema para ayudarte con el desarrollo de la práctica:
+
+volatile int tx_ready = 0; // booleano de tx lista
+# pragma vector = USCI_A1_VECTOR
+__interrupt void USCI_A1_ISR ( void )
+{
+// interrupci´on en recepci´on
+// funcionalidad de recepci´on
+// borrar flags de int. rx pendiente
+// interrupci´on en transmisi´on
+// activo booleano de transmisi´on lista
+// borrar flags de int. tx pendiente
+}
+
+// Rutina de interrupci´on de TIMER1_A0
+# pragma vector = TIMER1_A0_VECTOR
+__interrupt void TIMER1_A0_ISR ( void ) {
+// si el booleano de transmisi´on est´a listo
+// enviar dato a la UART
+// borrar booleano de transmisi´on
+// resto de funci´on de int. timer
+}

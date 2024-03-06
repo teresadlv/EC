@@ -1,0 +1,101 @@
+1. Mejorando las funciones de la UART
+
+Como hemos visto, la UART es capaz de recibir dos tipos de interrupciones:
+- Las de recepción, que se activan al recibir un byte.
+- Las de transmisión, que se activan siempre que se puede enviar un byte.
+
+Con esta estructura, las interrupciones de transmisión son algo tediosas de tratar. Por tanto, lo que haremos en esta primera parte de la práctica es activarlas únicamente cuando tengamos algo que enviar. En este caso, vamos a enviar números, en lugar del abecedario. Para ello utilizaremos una función load send buffer que carga en un buffer de caracteres el número que queremos enviar, y a continuación activa las interrupciones de UART en modo TX. NOTA: ¡El búfer de envío y el de recepción son diferentes!
+
+#include <stdio.h>
+const int BUFFER_SIZE = 32;
+char send_buffer[BUFFER_SIZE];
+int buffer_current_pointer = 1;
+int buffer_end_pointer = 0;
+
+void load_send_buffer(float val) {
+if (buffer_current_pointer <= buffer_end_pointer)
+return; // aún no hemos terminado de escribir lo antiguo!!
+
+//escribimos la representaci´on textual de "val" en el buffer, y
+//guardamos la longitud escrita para saber luego cuantos chars enviar
+//la función sprintf crea la representación de caracteres del número
+//flotante con dos decimales, y nos devuelve la cantidad de chars resultante
+//NO OLVIDAR CAMBIAR LAS CONFIGURACIONES QUE SE CAMBIARON EN LA PRACTICA2, APARTADO 6.1
+
+buffer_current_pointer = 0;
+buffer_end_pointer = sprintf(send_buffer, " %.2f\n\r", val) - 1;
+
+//COMPLETAR esperar a que el bit UCBUSY del registro UCA1STATW valga 0
+//COMPLETAR activar las interrupciones TX en UCA1IE
+}
+
+También tenemos que modificar la función de interrupción de la UART, para que, al vaciarse el buffer, se auto-desactive:
+
+#pragma vector=USCI_A1_VECTOR
+__interrupt void USCI_A1_ISR(void)
+{
+if (UCA1IFG & UCRXIFG) {
+// funcionalidad RX, no tocar
+}
+if (UCA1IFG & UCTXIFG){
+if (buffer_current_pointer > buffer_end_pointer) {
+
+//COMPLETAR hemos vaciado el buffer, desactivar interrupciones TX
+//NOTA: NO limpiar bit de interrupci´on pues no hemos transmitido!
+
+} else {
+//COMPLETAR enviar el caracter apuntado por buffer_current_pointer
+//COMPLETAR avanzar buffer_current_pointer a la siguiente posici´on
+//COMPLETAR limpiar bit de interrupci´on pendiente
+}
+}
+}
+
+Utiliza un temporizador de 1 segundo para enviar periódicamente valores por la UART llamando a load send buffer. Puedes utilizar el de la práctica anterior. No importa qué valores envíes, pueden ser aleatorios o siempre el mismo. Deberías ver una lista de números (con dos decimales) en el hyperterminal.
+
+2. Enviando datos de temperatura a través del puerto serie
+
+A continuación, vamos a proceder a leer el sensor de temperatura integrado, así podremos enviar datos con algo más de sentido.
+
+Con la siguiente función lo configuramos. Asegúrate de llamarla tras configurar a la UART en el main.
+
+void configure_adc() {
+
+// Initialize the shared reference module
+// By default, REFMSTR=1 => REFCTL is used to configure the internal reference
+while(REFCTL0 & REFGENBUSY); // If ref generator busy, WAIT
+REFCTL0 |= REFVSEL_0 + REFON; // Enable internal 1.2V reference
+/* Initialize ADC12_A */
+ADC12CTL0 &= ~ADC12ENC; // Disable ADC12
+ADC12CTL0 = ADC12SHT0_10 + ADC12ON; // Set sample time
+ADC12CTL1 = ADC12PDIV_3 + ADC12DIV_7 + ADC12SHP; // Enable sample timer
+ADC12CTL3 = ADC12TCMAP; // Enable internal temperature sensor
+ADC12MCTL0 = ADC12VRSEL_1 + ADC12INCH_30; // ADC input ch A30 => temp sense
+ADC12IER0 = 0x001; // ADC_IFG upon conv result-ADCMEMO
+while(!(REFCTL0 & REFGENRDY)); // Wait for reference generator to settle
+ADC12CTL0 |= ADC12ENC | ADC12SC; // Enable conversion and start conversion
+}
+
+Implementa la rutina de tratamiento de interrupción del sensor de temperatura haciendo que, cada vez que se dispare, se envíe el valor de la temperatura actual.
+
+#define CALADC12_12V_30C *((unsigned int *)0x1A1A) // Temperature Sensor Calibration-30 C
+#define CALADC12_12V_85C *((unsigned int *)0x1A1C) // Temperature Sensor Calibration-85 C
+#pragma vector=ADC12_VECTOR
+__interrupt void ADC12ISR (void)
+{
+if (ADC12IV == ADC12IV_ADC12IFG0) {
+//COMPLETAR lee el valor de la temperatura
+// en crudo (n´umero entero sin signo)
+// del registro ADC12MEM0
+//convierte ese valor a coma flotante utilizando la f´ormula
+float temp_true = (float)(((long)temp_adc - CALADC12_12V_30C )*55) / ( CALADC12_12V_85C -
+CALADC12_12V_30C ) + 30.0;
+//COMPLETAR env´ıa ese valor a la funci´on
+// load_send_buffer
+//COMPLETAR empieza la conversi´on
+// en el registro ADC12CTL0
+}
+ADC12IV = ADC12IV_NONE; //borra interrupci´on pendiente
+}
+
+Comprueba ahora que se envían los datos de temperatura a través del puerto serie. Si tocas el msp430 en la placa (chip negro) deberías ver cómo sube el valor mostrado. No es muy preciso, así que es posible que fluctúe bastante. Aún así, la temperatura debería moverse entre 20 y 30 grados.
