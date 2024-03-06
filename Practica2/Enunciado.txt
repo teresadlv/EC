@@ -1,0 +1,49 @@
+Ejercicios para la placa de desarrollo:
+
+IMPORTANTE: En esta práctica ejercitamos la lectura/escritura de funciones “a mano”, por tanto únicamente se
+puede incluir la cabecera #include <msp430.h>, y hay que eliminar #include <driverlib.h>. Se recomienda investigar las funciones definidas ahí (como WDT A hold, GPIO setAsOutputPin, PMM unlockLPM5, a fin de ver un ejemplo de implementación. Para ver los valores y referencias de las funciones y variables, se recuerda la posibilidad de usar “F3” para que code composer studio nos lleve directamente a las definiciones.)
+
+1. Generar un programa HOLA MUNDO en C embebido comprobando que el entorno de desarrollo está listo para
+trabajar. Para ello, es importante realizar un par de configuraciones:
+
+Propiedades de proyecto > Build > MSP430 compiler > Advanced Options > Language Options > Level
+of printf support > full.
+Propiedades de proyecto > Build > MSP430 linker > Basic Options > Heap Size > 1024
+
+A partir de aquí, se puede importar #include <stdio.h> y realizar printf("TEXTO"); de manera normal. La salida
+debería verse en la consola de code composer studio.
+NOTA: La función printf no vuelca directamente el texto por consola, sino que lo deja en un búfer a la espera de ser vaciado. Esto puede ocasionar que, tras ejecutarse el código, no veamos por consola el texto. Para solucionarlo, se puede forzar un vaciado de búfer colocando un salto de línea al final del texto, o explicitando el vaciado con fflush(stdout);.
+
+2. Generar un programa que configure el led rojo (P1.0) como salida y lo haga parpadear con un cierto retardo (30.000 ciclos), implementado mediante un bucle. Probar el mismo ejercicio variando la frecuencia de parpadeo.
+Estudia la función __delay_cycles() ¿Dónde está declarada? (Pista: Si la utilizas, puedes buscar la declaración pulsando F3 sobre el nombre de la misma.) Investiga exactamente qué significa el concepto de intrinsic. (Sección 6.8 del documento slau132y). Prueba a utilizar la función __delay_cycles() en lugar de un bucle para realizar las esperas.
+
+3. Generar el programa anterior configurando el led verde (P9.7) como salida y haciéndolo parpadear con un delay de 30.000 ciclos. Probar el mismo ejercicio variando la frecuencia de parpadeo.
+
+4. Generar un programa reuniendo todo lo anterior que haga parpadear ambos leds al mismo tiempo.
+
+5. Implementar el siguiente c´odigo describiendo su funcionamiento y explicando las partes fundamentales del código.La funcionalidad de las funciones debería implementarse mediante acceso a registros, y no mediante llamadas a driverlib. Si ya hiciste el apartado 2/3/4 de la práctica así, este apartado ya está hecho!
+
+//#include <driverlib.h>
+int main(void) {
+int i;
+// Stop watchdog timer
+WDT_A_hold(WDT_A_BASE);
+// Set P1.0 to output direction
+GPIO_setAsOutputPin(
+GPIO_PORT_P1,
+GPIO_PIN0
+);
+// Disable the GPIO power-on default high-impedance mode
+// to activate previously configured port settings
+PMM_unlockLPM5();
+while(1)
+{
+// Toggle P1.0 output
+GPIO_toggleOutputOnPin(
+GPIO_PORT_P1,
+GPIO_PIN0
+);
+// Delay
+for(i=10000; i>0; i--);
+}
+}
