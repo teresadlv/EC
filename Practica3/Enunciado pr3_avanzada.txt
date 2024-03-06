@@ -1,0 +1,38 @@
+1. Crea una función charge pin que configure el pin P2.0 (tercero desde abajo en la columna de pines más a la
+izquierda de la placa), para escribir primero un uno (cargando el pin), y luego lo ponga en modo lectura, esperando una interrupción por flanco de bajada (cuando se descargue). Usa el siguiente esqueleto:
+
+void charge_pin () {
+// Configura P2 .0 como output
+// Desactiva resistencias de pullup / down
+// Escribe un 1 en la salida
+// introduce un delay de 10 ciclos para cargar el pin
+// configura el pin como entrada
+// limpia interrupciones pendientes
+// configura interrupciones en flanco de bajada
+}
+
+Añade también la ISR de interrupción del pin P2.0:
+
+// ISR del Puerto 2
+{
+// COMPLETAR Funcionalidad al detectar pulsaci ´on ( Resetea cuenta )
+// COMPLETAR Limpia bit pendiente
+charge_pin () ; // Resetea el pin para la siguiente interrupci ´on
+}
+
+Llegados a este punto, puedes comprobar que se dispara periódicamente y que el contador se resetea de vez en
+cuando. Asegúrate de llamar a charge pin en tu main para que se inicialice el primer disparo. A partir de ahí será autom´atico.
+
+2. La rutina se dispara, más o menos rápido, pero lo hace siempre, independientemente de si toco o no el pin. Ahora debemos medir el tiempo hasta el disparo, a fin de ver si de verdad debemos contar el toque. Para ello vamos a utilizar un timer, que nos servir´a para cronometrar el tiempo entre la llamada a charge pin y la ISR. Vamos a usar el timer TA2CTL. Se debe configurar con la entrada ACLK, divisor entre 8, modo continuo, y resetear a cero, justo al final de la función charge pin. Así comenzará a cronometrar en cuanto salgamos de ella. No hace falta activar las interrupciones del timer ya que no las vamos a utilizar. Ahora, modificamos la función de interrupción del pin para tener en cuenta el valor del timer. Con la configuración proporcionada, el tiempo entre charge pin y la ISR debería ser aproximadamente de 10000 unidades al no pulsar, y de unas 10 al pulsar. Modifica la función de la siguiente forma para reflejar esto:
+
+// ISR del Puerto 2
+{
+// COMPLETAR Recojo el valor del timer de TAxR
+// COMPLETAR Si el tiempo es < 100
+// COMPLETAR Funcionalidad al detectar pulsaci ´on
+// COMPLETAR limpia bit pendiente
+charge_pin () ; // resetea el pin para la siguiente interrupci ´on
+}
+
+Con esto, ya debería estar todo listo para que el código funcione correctamente! Para comprobarlo, haz que cada
+vez que se detecte una pulsación, se resetee el contador del display LCD.

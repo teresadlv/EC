@@ -1,0 +1,10 @@
+"./3_1.obj"
+"./3_2.obj"
+"./3_3.obj"
+"./3_4.obj"
+"./3_4v2.obj"
+"./modificacion.obj"
+"../lnk_msp430fr6989.cmd"
+-llibmpu_init.a
+-llibmath.a
+-llibc.a

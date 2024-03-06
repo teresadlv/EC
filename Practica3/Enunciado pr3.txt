@@ -1,0 +1,79 @@
+1. Generar un programa en C embebido que utilizando polling encienda o apague el led rojo en función del evento del switch P1.1 de la placa.
+
+2. Generar un programa en C embebido que utilizando interrupciones encienda o apague el led rojo en función de la captura del evento producido por el switch P1.1 de la placa.
+
+3. Generar un programa en C embebido que utilizando el contador TIMER0 del microprocesador (inicializado a 40.000) y a través del método de interrupciones, haga parpadear el led rojo en función del delay introducido por el timer0.
+
+4. Generar un programa en C embebido que utilizando el contador TIMER0 del microprocesador (inicializado a 40.000) y a través del método de interrupciones, muestre el conteo en el LCD de la placa añadiendo el control de los dos switches (botones) para Parar/Continuar y Reiniciar el contador:
+- Botón1: La parada del contador cuando se pulsa el switch. Si se vuelve a pulsar continua el conteo desde el
+valor actual.
+- Botón2: Reiniciar el contador a 0.
+
+Se proporciona el siguiente código para trabajar con el LCD:
+
+// **********************************
+// Configures ACLK to 32 KHz crystal
+void config_ACLK_to_32KHz_crystal () {
+// By default , ACLK runs on LFMODCLK at 5 MHz /128 = 39 KHz
+// Reroute pins to LFXIN / LFXOUT functionality
+PJSEL1 &= ~ BIT4 ;
+PJSEL0 |= BIT4 ;
+// Wait until the oscillator fault flags remain cleared
+CSCTL0 = CSKEY ; // Unlock CS registers
+do {
+CSCTL5 &= ~ LFXTOFFG ; // Local fault flag
+SFRIFG1 &= ~ OFIFG ; // Global fault flag
+} while (( CSCTL5 & LFXTOFFG ) != 0) ;
+CSCTL0_H = 0; // Lock CS registers
+return ;
+}
+const unsigned char LCD_Num [10] = {0 xFC , 0 x60 , 0 xDB , 0 xF3 , 0 x67 , 0 xB7 , 0 xBF , 0 xE0 , 0 xFF ,
+0 xE7 };
+// *************** function that displays any 16 - bit unsigned integer ************
+inline void display_num_lcd ( unsigned int n ) {
+int i = 0;
+do {
+unsigned int digit = n % 10;
+switch ( i ) {
+case 0: LCDM8 = LCD_Num [ digit ]; break ; // first digit
+case 1: LCDM15 = LCD_Num [ digit ]; break ; // second digit
+case 2: LCDM19 = LCD_Num [ digit ]; break ; // third digit
+case 3: LCDM4 = LCD_Num [ digit ]; break ; // fourth digit
+case 4: LCDM6 = LCD_Num [ digit ]; break ; // fifth digit
+}
+n /= 10;
+i ++;
+} while ( i < 5) ;
+}
+// **********************************************************
+// Initializes the LCD_C module
+// *** Source : Function obtained from MSP430FR6989 Sample Code ***
+void Initialize_LCD () {
+PJSEL0 = BIT4 | BIT5 ; // For LFXT
+// Initialize LCD segments 0 - 21; 26 - 43
+LCDCPCTL0 = 0 xFFFF ;
+LCDCPCTL1 = 0 xFC3F ;
+LCDCPCTL2 = 0 x0FFF ;
+// Configure LFXT 32 kHz crystal
+CSCTL0_H = CSKEY >> 8; // Unlock CS registers
+CSCTL4 &= ~ LFXTOFF ; // Enable LFXT
+do {
+CSCTL5 &= ~ LFXTOFFG ; // Clear LFXT fault flag
+SFRIFG1 &= ~ OFIFG ;
+} while ( SFRIFG1 & OFIFG ) ; // Test oscillator fault flag
+CSCTL0_H = 0; // Lock CS registers
+// Initialize LCD_C
+// ACLK , Divider = 1 , Pre - divider = 16; 4 - pin MUX
+LCDCCTL0 = LCDDIV__1 | LCDPRE__16 | LCD4MUX | LCDLP ;
+// VLCD generated internally ,
+// V2 -V4 generated internally , v5 to ground
+8
+// Set VLCD voltage to 2.60 v
+// Enable charge pump and select internal reference for it
+LCDCVCTL = VLCD_1 | VLCDREF_0 | LCDCPEN ;
+LCDCCPCTL = LCDCPCLKSYNC ; // Clock synchronization enabled
+LCDCMEMCTL = LCDCLRM ; // Clear LCD memory
+// Turn LCD on
+LCDCCTL0 |= LCDON ;
+return ;
+}
