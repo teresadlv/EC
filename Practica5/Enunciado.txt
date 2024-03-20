@@ -1,0 +1,12 @@
+Practica 5:
+
+Requisitos:
+1. Debe hacer uso de la entrada de la placa. En este sentido, se deben utilizar, al menos, dos botones, la UART RX, o ambas.
+2. Debe hacer uso de la salida de la placa, utilizando, al menos, el panel LCD y/o la UART. También se pueden utilizar los LEDs si se desea.
+3. Debe hacer uso de interrupciones temporizadas. Se debe utilizar, al menos, un temporizador.
+
+Más allá de eso, la práctica es totalmente libre. 
+
+Idea:
+Un juego de velocidad donde ambos jugadores tienen un pulsador, y gana el que lo pulsa antes tras algún tipo de señal visual.
+
